@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQL Builder - QRadar Query Helper</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --bg-dark: #1e293b;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-dark);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        header h1 span {
+            color: var(--primary);
+        }
+
+        /* Navigation Tabs */
+        .tabs {
+            display: flex;
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Main Content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .panel {
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Form Elements */
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        textarea {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .form-row > * {
+            flex: 1;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #475569;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        /* Tags/Chips */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin: 0.25rem;
+        }
+
+        .tag .remove {
+            cursor: pointer;
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .where-operator {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .where-operator:hover {
+            background: var(--primary-dark);
+        }
+
+        .bracket-tag {
+            background: var(--warning);
+            color: white;
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .bracket-tag .remove {
+            color: white;
+            opacity: 0.8;
+        }
+
+        .bracket-tag .remove:hover {
+            opacity: 1;
+        }
+
+        /* Query Output */
+        .query-output {
+            background: var(--bg-dark);
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            position: relative;
+            min-height: 100px;
+            width: 100%;
+            border: none;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .query-output .copy-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .query-output .copy-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* Validation Messages */
+        .validation {
+            margin-top: 1rem;
+        }
+
+        .validation-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .validation-item.error {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .validation-item.warning {
+            background: #fffbeb;
+            color: var(--warning);
+        }
+
+        .validation-item.success {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        /* Template Cards */
+        .template-category {
+            margin-bottom: 2rem;
+        }
+
+        .template-category h3 {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .template-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        }
+
+        .template-card h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .template-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Reference Tables */
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .ref-table th, .ref-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ref-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+
+        .ref-table tr:hover {
+            background: var(--bg);
+        }
+
+        .ref-table code {
+            background: #e2e8f0;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* Reference Tabs */
+        .ref-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .ref-tab {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .ref-tab:hover {
+            background: var(--bg);
+        }
+
+        .ref-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Accordion */
+        .accordion-item {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+        }
+
+        .accordion-header {
+            padding: 1rem;
+            background: var(--bg);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 500;
+        }
+
+        .accordion-header:hover {
+            background: #e2e8f0;
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 1rem;
+        }
+
+        .accordion-item.open .accordion-content {
+            display: block;
+        }
+
+        .accordion-item.open .accordion-header .arrow {
+            transform: rotate(180deg);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card);
+            border-radius: 12px;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow: auto;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        /* Quick Add Buttons */
+        .quick-add {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .quick-add button {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-add button:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Syntax highlighting in query */
+        .keyword { color: #c084fc; }
+        .function { color: #60a5fa; }
+        .string { color: #4ade80; }
+        .number { color: #fb923c; }
+
+        /* Function Cards */
+        .function-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .function-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .function-card:hover {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
+        }
+
+        .function-card.selected {
+            border-color: var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .function-card .func-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--primary);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+
+        .function-card .func-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #function-preview {
+            min-height: 100px;
+        }
+
+        #function-preview .preview-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        #function-preview .preview-syntax {
+            background: var(--bg-dark);
+            color: #e2e8f0;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            margin-bottom: 0.75rem;
+        }
+
+        #function-preview .preview-desc {
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        /* Helpers */
+        .text-muted { color: var(--text-muted); }
+        .text-sm { font-size: 0.85rem; }
+        .mt-1 { margin-top: 0.5rem; }
+        .mt-2 { margin-top: 1rem; }
+        .mb-1 { margin-bottom: 0.5rem; }
+        .mb-2 { margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><span>AQL</span> Builder</h1>
+        <span class="text-muted">QRadar Query Helper</span>
+    </header>
+
+    <nav class="tabs">
+        <div class="tab active" data-panel="builder">Query Builder</div>
+        <div class="tab" data-panel="functions">Functions</div>
+        <div class="tab" data-panel="templates">Templates</div>
+        <div class="tab" data-panel="reference">Reference</div>
+        <div class="tab" data-panel="validate">Validator</div>
+    </nav>
+
+    <main>
+        <!-- Query Builder Panel -->
+        <div id="builder" class="panel active">
+            <div class="grid grid-2">
+                <div>
+                    <!-- SELECT -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">SELECT Columns</h2>
+                            <button class="btn btn-sm btn-outline" onclick="addAllFields()">Add Common</button>
+                        </div>
+                        <div class="quick-add" id="field-buttons"></div>
+                        <div class="form-group">
+                            <input type="text" id="select-input" placeholder="Enter column or function (press Enter to add)">
+                        </div>
+                        <div id="select-tags"></div>
+                    </div>
+
+                    <!-- FROM -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">FROM Table</h2>
+                        </div>
+                        <div class="form-row">
+                            <label class="btn btn-outline" style="text-align:center">
+                                <input type="radio" name="table" value="events" checked style="margin-right:0.5rem"> events
+                            </label>
+                            <label class="btn btn-outline" style="text-align:center">
+                                <input type="radio" name="table" value="flows" style="margin-right:0.5rem"> flows
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- WHERE -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">WHERE Conditions</h2>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline" onclick="addWhereBracket('(')" title="Add opening bracket">(</button>
+                                <button class="btn btn-sm btn-outline" onclick="addWhereBracket(')')" title="Add closing bracket">)</button>
+                            </div>
+                        </div>
+                        <div class="quick-add">
+                            <button onclick="addWhereTemplate('sourceip')">Source IP</button>
+                            <button onclick="addWhereTemplate('destip')">Dest IP</button>
+                            <button onclick="addWhereTemplate('username')">Username</button>
+                            <button onclick="addWhereTemplate('magnitude')">Magnitude</button>
+                            <button onclick="addWhereTemplate('logsource')">Log Source</button>
+                            <button onclick="addWhereTemplate('qidname')">Event Name</button>
+                            <button onclick="addWhereTemplate('payload')">Payload</button>
+                        </div>
+                        <div class="form-row" style="align-items:center">
+                            <div class="form-group" style="flex:0 0 auto; margin-bottom:0">
+                                <select id="where-next-operator" style="width:auto">
+                                    <option value="AND">AND</option>
+                                    <option value="OR">OR</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="flex:1; margin-bottom:0">
+                                <input type="text" id="where-input" placeholder="Enter condition (press Enter to add)">
+                            </div>
+                        </div>
+                        <p class="text-muted text-sm mt-1">Select AND/OR before adding each condition. Click on AND/OR in existing conditions to change them.</p>
+                        <div id="where-tags" class="mt-1"></div>
+                    </div>
+
+                    <!-- Bulk Hash Search -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Bulk Hash/Value Search</h2>
+                            <button class="btn btn-sm btn-outline" onclick="clearBulkSearch()">Clear</button>
+                        </div>
+                        <p class="text-muted text-sm mb-1">Paste multiple values (one per line) to generate WHERE conditions quickly.</p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Field</label>
+                                <select id="bulk-field">
+                                    <option value="UTF8(payload)">UTF8(payload)</option>
+                                    <option value="sourceip">sourceip</option>
+                                    <option value="destinationip">destinationip</option>
+                                    <option value="username">username</option>
+                                    <option value="QIDNAME(qid)">QIDNAME(qid)</option>
+                                    <option value="LOGSOURCENAME(logsourceid)">LOGSOURCENAME(logsourceid)</option>
+                                    <option value="custom">Custom...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Match Type</label>
+                                <select id="bulk-match-type">
+                                    <option value="ILIKE">ILIKE (contains)</option>
+                                    <option value="=">= (exact match)</option>
+                                    <option value="LIKE">LIKE (case-sensitive)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="bulk-custom-field-group" style="display:none">
+                            <label>Custom Field</label>
+                            <input type="text" id="bulk-custom-field" placeholder="e.g., UTF8(payload)">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Operator Between Values</label>
+                                <div class="btn-group">
+                                    <label class="btn btn-outline" style="text-align:center">
+                                        <input type="radio" name="bulk-operator" value="OR" checked style="margin-right:0.5rem"> OR
+                                    </label>
+                                    <label class="btn btn-outline" style="text-align:center">
+                                        <input type="radio" name="bulk-operator" value="AND" style="margin-right:0.5rem"> AND
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Values (one per line)</label>
+                            <textarea id="bulk-values" rows="6" placeholder="Paste hashes, IPs, usernames, etc. here...
+e.g.:
+11bdb69deffdc41216bae091ab4273206f0fcaaceffc5ae2cbb1a02d800c203f
+19aa5019f3c00211182b2a80dd9675721dac7cfb31d174436d3b8ec9f97d898b
+2965c1b6ab9d1601752cb4aa26d64a444b0a535b1a190a70d5ce935be3f91699"></textarea>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn btn-primary" onclick="generateBulkWhere()">Add to WHERE</button>
+                            <button class="btn btn-secondary" onclick="previewBulkWhere()">Preview</button>
+                        </div>
+                        <div id="bulk-preview" class="query-output mt-2" style="display:none; min-height:auto; max-height:200px; overflow:auto;"></div>
+                    </div>
+
+                    <!-- GROUP BY -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">GROUP BY</h2>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" id="groupby-input" placeholder="Enter column to group by">
+                        </div>
+                        <div id="groupby-tags"></div>
+                    </div>
+
+                    <!-- ORDER BY, LIMIT, TIME -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">ORDER BY, LIMIT & TIME</h2>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Order By</label>
+                                <input type="text" id="orderby-input" placeholder="e.g., starttime">
+                            </div>
+                            <div class="form-group">
+                                <label>Direction</label>
+                                <select id="order-dir">
+                                    <option value="DESC">DESC</option>
+                                    <option value="ASC">ASC</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Limit</label>
+                                <input type="number" id="limit-input" placeholder="e.g., 100">
+                            </div>
+                            <div class="form-group">
+                                <label>Time Range</label>
+                                <select id="time-select">
+                                    <option value="">-- Select --</option>
+                                    <option value="LAST 5 MINUTES">Last 5 minutes</option>
+                                    <option value="LAST 15 MINUTES">Last 15 minutes</option>
+                                    <option value="LAST 1 HOURS">Last 1 hour</option>
+                                    <option value="LAST 24 HOURS">Last 24 hours</option>
+                                    <option value="LAST 7 DAYS">Last 7 days</option>
+                                    <option value="LAST 30 DAYS">Last 30 days</option>
+                                    <option value="custom">Custom...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="custom-time-group" style="display:none">
+                            <label>Custom Time Clause</label>
+                            <input type="text" id="custom-time" placeholder="e.g., START '2024-01-01 00:00' STOP '2024-01-02 00:00'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Query Output -->
+                <div>
+                    <div class="card" style="position:sticky;top:1rem">
+                        <div class="card-header">
+                            <h2 class="card-title">Generated Query</h2>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-outline" onclick="clearBuilder()">Clear</button>
+                                <button class="btn btn-sm btn-primary" onclick="copyQuery()">Copy</button>
+                            </div>
+                        </div>
+                        <textarea class="query-output" id="query-output" spellcheck="false">SELECT *
+FROM events</textarea>
+                        <div class="validation" id="validation-output"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Functions Panel -->
+        <div id="functions" class="panel">
+            <div class="grid grid-2">
+                <div>
+                    <!-- Aggregation Functions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Aggregation Functions</h2>
+                        </div>
+                        <p class="text-muted text-sm mb-1">Click a function to add it to your SELECT clause. Used with GROUP BY.</p>
+                        <div class="function-grid" id="agg-functions"></div>
+                    </div>
+
+                    <!-- Calculation & Formatting Functions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Calculation & Formatting</h2>
+                        </div>
+                        <p class="text-muted text-sm mb-1">String manipulation, type conversion, and date formatting functions.</p>
+                        <div class="function-grid" id="calc-functions"></div>
+                    </div>
+
+                    <!-- Data Retrieval Functions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Data Retrieval</h2>
+                        </div>
+                        <p class="text-muted text-sm mb-1">Lookup names and properties from QRadar's internal databases.</p>
+                        <div class="function-grid" id="retrieval-functions"></div>
+                    </div>
+                </div>
+
+                <div>
+                    <!-- Geographic Functions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Geographic Functions</h2>
+                        </div>
+                        <p class="text-muted text-sm mb-1">Geolocation lookups using MaxMind data.</p>
+                        <div class="function-grid" id="geo-functions"></div>
+                    </div>
+
+                    <!-- Reference Data Functions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Reference Data</h2>
+                        </div>
+                        <p class="text-muted text-sm mb-1">Query custom reference sets, maps, and tables.</p>
+                        <div class="function-grid" id="ref-data-functions"></div>
+                    </div>
+
+                    <!-- Filter Functions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title">Filter Functions</h2>
+                        </div>
+                        <p class="text-muted text-sm mb-1">Special filtering functions for WHERE clauses.</p>
+                        <div class="function-grid" id="filter-functions"></div>
+                    </div>
+
+                    <!-- Function Preview -->
+                    <div class="card" style="position:sticky;top:1rem">
+                        <div class="card-header">
+                            <h2 class="card-title">Function Preview</h2>
+                        </div>
+                        <div id="function-preview">
+                            <p class="text-muted">Click on a function to see details and add it to your query.</p>
+                        </div>
+                        <div id="function-add-controls" style="display:none" class="mt-2">
+                            <div class="form-group">
+                                <label>Customize function call:</label>
+                                <input type="text" id="function-custom-input" placeholder="Customize the function syntax">
+                            </div>
+                            <div class="btn-group">
+                                <button class="btn btn-primary" onclick="addFunctionToSelect()">Add to SELECT</button>
+                                <button class="btn btn-secondary" onclick="addFunctionToWhere()">Add to WHERE</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Templates Panel -->
+        <div id="templates" class="panel">
+            <div id="templates-container"></div>
+        </div>
+
+        <!-- Reference Panel -->
+        <div id="reference" class="panel">
+            <div class="ref-tabs">
+                <div class="ref-tab active" data-ref="event-fields">Event Fields</div>
+                <div class="ref-tab" data-ref="flow-fields">Flow Fields</div>
+                <div class="ref-tab" data-ref="functions">Functions</div>
+                <div class="ref-tab" data-ref="operators">Operators</div>
+                <div class="ref-tab" data-ref="time">Time Clauses</div>
+            </div>
+
+            <div class="card">
+                <div id="ref-content"></div>
+            </div>
+        </div>
+
+        <!-- Validator Panel -->
+        <div id="validate" class="panel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Query Validator</h2>
+                </div>
+                <div class="form-group">
+                    <label>Paste your AQL query here:</label>
+                    <textarea id="validate-input" rows="10" placeholder="SELECT * FROM events WHERE ..."></textarea>
+                </div>
+                <button class="btn btn-primary" onclick="validateQuery()">Validate Query</button>
+                <div class="validation mt-2" id="validate-output"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Template Modal -->
+    <div class="modal-overlay" id="template-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Template</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modal-description" class="text-muted mb-2"></p>
+                <div class="query-output" id="modal-query"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Close</button>
+                <button class="btn btn-secondary" onclick="loadToBuilder()">Load to Builder</button>
+                <button class="btn btn-primary" onclick="copyModalQuery()">Copy Query</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        // where entries are now objects: { condition: string, operator: 'AND'|'OR'|null, isBracket: boolean }
+        // operator is null for the first condition, and for brackets
+        let queryState = {
+            select: [],
+            from: 'events',
+            where: [],
+            groupBy: [],
+            having: [],
+            orderBy: [],
+            orderDir: 'DESC',
+            limit: null,
+            time: null
+        };
+
+        let currentTemplate = null;
+        let referenceData = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTabs();
+            initInputHandlers();
+            initBulkSearch();
+            loadReferenceData();
+            loadTemplates();
+            updateFieldButtons();
+            updateQuery();
+        });
+
+        // Tab Navigation
+        function initTabs() {
+            document.querySelectorAll('.tabs .tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                    tab.classList.add('active');
+                    document.getElementById(tab.dataset.panel).classList.add('active');
+                });
+            });
+
+            document.querySelectorAll('.ref-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.ref-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    showReference(tab.dataset.ref);
+                });
+            });
+        }
+
+        // Input Handlers
+        function initInputHandlers() {
+            // SELECT input
+            document.getElementById('select-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                    addSelect(e.target.value.trim());
+                    e.target.value = '';
+                }
+            });
+
+            // WHERE input
+            document.getElementById('where-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                    addWhere(e.target.value.trim());
+                    e.target.value = '';
+                }
+            });
+
+            // GROUP BY input
+            document.getElementById('groupby-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && e.target.value.trim()) {
+                    addGroupBy(e.target.value.trim());
+                    e.target.value = '';
+                }
+            });
+
+            // Table radio buttons
+            document.querySelectorAll('input[name="table"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    queryState.from = e.target.value;
+                    updateFieldButtons();
+                    updateQuery();
+                });
+            });
+
+            // Order by input
+            document.getElementById('orderby-input').addEventListener('input', (e) => {
+                queryState.orderBy = e.target.value.trim() ? [e.target.value.trim()] : [];
+                updateQuery();
+            });
+
+            // Order direction
+            document.getElementById('order-dir').addEventListener('change', (e) => {
+                queryState.orderDir = e.target.value;
+                updateQuery();
+            });
+
+            // Limit input
+            document.getElementById('limit-input').addEventListener('input', (e) => {
+                queryState.limit = e.target.value ? parseInt(e.target.value) : null;
+                updateQuery();
+            });
+
+            // Time select
+            document.getElementById('time-select').addEventListener('change', (e) => {
+                if (e.target.value === 'custom') {
+                    document.getElementById('custom-time-group').style.display = 'block';
+                    queryState.time = document.getElementById('custom-time').value || null;
+                } else {
+                    document.getElementById('custom-time-group').style.display = 'none';
+                    queryState.time = e.target.value || null;
+                }
+                updateQuery();
+            });
+
+            // Custom time input
+            document.getElementById('custom-time').addEventListener('input', (e) => {
+                queryState.time = e.target.value || null;
+                updateQuery();
+            });
+        }
+
+        // Add functions
+        function addSelect(value) {
+            if (!queryState.select.includes(value)) {
+                queryState.select.push(value);
+                updateSelectTags();
+                updateQuery();
+            }
+        }
+
+        function removeSelect(value) {
+            queryState.select = queryState.select.filter(v => v !== value);
+            updateSelectTags();
+            updateQuery();
+        }
+
+        function addWhere(value) {
+            const operator = document.getElementById('where-next-operator').value;
+            const lastItem = queryState.where[queryState.where.length - 1];
+            // No operator needed if: first condition OR right after opening bracket
+            const needsOperator = queryState.where.length > 0 &&
+                                 !(lastItem && lastItem.condition === '(');
+            queryState.where.push({
+                condition: value,
+                operator: needsOperator ? operator : null,
+                isBracket: false
+            });
+            updateWhereTags();
+            updateQuery();
+        }
+
+        function addWhereBracket(bracket) {
+            const lastItem = queryState.where[queryState.where.length - 1];
+            // Opening bracket needs operator only if there's something before it that's not an opening bracket
+            // Closing brackets never need operator
+            const needsOperator = bracket === '(' &&
+                                 queryState.where.length > 0 &&
+                                 !(lastItem && lastItem.condition === '(');
+            const operator = needsOperator ? document.getElementById('where-next-operator').value : null;
+            queryState.where.push({
+                condition: bracket,
+                operator: operator,
+                isBracket: true
+            });
+            updateWhereTags();
+            updateQuery();
+        }
+
+        function removeWhere(index) {
+            queryState.where.splice(index, 1);
+            // If we removed the first item and there's a new first item, remove its operator
+            if (index === 0 && queryState.where.length > 0 && !queryState.where[0].isBracket) {
+                queryState.where[0].operator = null;
+            }
+            updateWhereTags();
+            updateQuery();
+        }
+
+        function toggleWhereOperator(index) {
+            if (queryState.where[index] && queryState.where[index].operator) {
+                queryState.where[index].operator = queryState.where[index].operator === 'AND' ? 'OR' : 'AND';
+                updateWhereTags();
+                updateQuery();
+            }
+        }
+
+        function addGroupBy(value) {
+            if (!queryState.groupBy.includes(value)) {
+                queryState.groupBy.push(value);
+                updateGroupByTags();
+                updateQuery();
+            }
+        }
+
+        function removeGroupBy(value) {
+            queryState.groupBy = queryState.groupBy.filter(v => v !== value);
+            updateGroupByTags();
+            updateQuery();
+        }
+
+        // Update tag displays
+        function updateSelectTags() {
+            const container = document.getElementById('select-tags');
+            container.innerHTML = queryState.select.map(s =>
+                `<span class="tag">${escapeHtml(s)} <span class="remove" onclick="removeSelect('${escapeHtml(s)}')">&times;</span></span>`
+            ).join('');
+        }
+
+        function updateWhereTags() {
+            const container = document.getElementById('where-tags');
+            container.innerHTML = queryState.where.map((w, i) => {
+                const operatorHtml = w.operator
+                    ? `<span class="where-operator" onclick="toggleWhereOperator(${i})" title="Click to toggle">${w.operator}</span> `
+                    : '';
+                const conditionClass = w.isBracket ? 'tag bracket-tag' : 'tag';
+                return `${operatorHtml}<span class="${conditionClass}">${escapeHtml(w.condition)} <span class="remove" onclick="removeWhere(${i})">&times;</span></span>`;
+            }).join(' ');
+        }
+
+        function updateGroupByTags() {
+            const container = document.getElementById('groupby-tags');
+            container.innerHTML = queryState.groupBy.map(g =>
+                `<span class="tag">${escapeHtml(g)} <span class="remove" onclick="removeGroupBy('${escapeHtml(g)}')">&times;</span></span>`
+            ).join('');
+        }
+
+        // Update field buttons based on selected table
+        function updateFieldButtons() {
+            const container = document.getElementById('field-buttons');
+            const fields = queryState.from === 'events'
+                ? ['sourceip', 'destinationip', 'username', 'magnitude', 'QIDNAME(qid)', 'LOGSOURCENAME(logsourceid)', 'starttime', 'eventcount']
+                : ['sourceip', 'destinationip', 'sourcebytes', 'destinationbytes', 'sourceport', 'destinationport', 'protocolid'];
+
+            container.innerHTML = fields.map(f =>
+                `<button onclick="addSelect('${f}')">${f}</button>`
+            ).join('');
+        }
+
+        function addAllFields() {
+            const common = queryState.from === 'events'
+                ? ['sourceip', 'destinationip', 'username', 'QIDNAME(qid)', 'LOGSOURCENAME(logsourceid)', 'magnitude']
+                : ['sourceip', 'destinationip', 'sourcebytes', 'destinationbytes', 'sourceport', 'destinationport'];
+            common.forEach(f => addSelect(f));
+        }
+
+        // WHERE templates
+        function addWhereTemplate(type) {
+            let condition = '';
+            switch(type) {
+                case 'sourceip':
+                    condition = prompt("Enter source IP (or CIDR range):", "192.168.1.1");
+                    if (condition) {
+                        condition = condition.includes('/')
+                            ? `INCIDR('${condition}', sourceip)`
+                            : `sourceip = '${condition}'`;
+                    }
+                    break;
+                case 'destip':
+                    condition = prompt("Enter destination IP (or CIDR range):", "10.0.0.1");
+                    if (condition) {
+                        condition = condition.includes('/')
+                            ? `INCIDR('${condition}', destinationip)`
+                            : `destinationip = '${condition}'`;
+                    }
+                    break;
+                case 'username':
+                    condition = prompt("Enter username (use % for wildcard):", "admin");
+                    if (condition) {
+                        condition = condition.includes('%')
+                            ? `username ILIKE '${condition}'`
+                            : `username = '${condition}'`;
+                    }
+                    break;
+                case 'magnitude':
+                    condition = prompt("Enter minimum magnitude (1-10):", "7");
+                    if (condition) condition = `magnitude >= ${condition}`;
+                    break;
+                case 'logsource':
+                    condition = prompt("Enter log source name pattern:", "Windows");
+                    if (condition) condition = `LOGSOURCENAME(logsourceid) ILIKE '%${condition}%'`;
+                    break;
+                case 'qidname':
+                    condition = prompt("Enter event name pattern:", "login");
+                    if (condition) condition = `QIDNAME(qid) ILIKE '%${condition}%'`;
+                    break;
+                case 'payload':
+                    condition = prompt("Enter payload search pattern:", "error");
+                    if (condition) condition = `UTF8(payload) ILIKE '%${condition}%'`;
+                    break;
+            }
+            if (condition) {
+                addWhere(condition);
+            }
+        }
+
+        // Bulk Hash/Value Search
+        function initBulkSearch() {
+            // Show/hide custom field input based on selection
+            document.getElementById('bulk-field').addEventListener('change', (e) => {
+                const customGroup = document.getElementById('bulk-custom-field-group');
+                customGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
+            });
+        }
+
+        function getBulkField() {
+            const select = document.getElementById('bulk-field');
+            if (select.value === 'custom') {
+                return document.getElementById('bulk-custom-field').value.trim() || 'UTF8(payload)';
+            }
+            return select.value;
+        }
+
+        function getBulkValues() {
+            const textarea = document.getElementById('bulk-values');
+            return textarea.value
+                .split('\n')
+                .map(v => v.trim())
+                .filter(v => v.length > 0);
+        }
+
+        function buildBulkCondition() {
+            const values = getBulkValues();
+            if (values.length === 0) return null;
+
+            const field = getBulkField();
+            const matchType = document.getElementById('bulk-match-type').value;
+            const operator = document.querySelector('input[name="bulk-operator"]:checked').value;
+
+            const conditions = values.map(value => {
+                if (matchType === '=') {
+                    return `${field} = '${value}'`;
+                } else {
+                    // LIKE or ILIKE - wrap with %
+                    return `${field} ${matchType} '%${value}%'`;
+                }
+            });
+
+            if (conditions.length === 1) {
+                return conditions[0];
+            }
+
+            // Wrap multiple conditions in parentheses
+            return `(${conditions.join(`\n   ${operator} `)})`;
+        }
+
+        function previewBulkWhere() {
+            const preview = document.getElementById('bulk-preview');
+            const condition = buildBulkCondition();
+
+            if (!condition) {
+                preview.style.display = 'none';
+                alert('Please enter at least one value');
+                return;
+            }
+
+            preview.textContent = condition;
+            preview.style.display = 'block';
+        }
+
+        function generateBulkWhere() {
+            const condition = buildBulkCondition();
+
+            if (!condition) {
+                alert('Please enter at least one value');
+                return;
+            }
+
+            addWhere(condition);
+
+            // Clear the bulk search form
+            clearBulkSearch();
+        }
+
+        function clearBulkSearch() {
+            document.getElementById('bulk-values').value = '';
+            document.getElementById('bulk-field').value = 'UTF8(payload)';
+            document.getElementById('bulk-match-type').value = 'ILIKE';
+            document.getElementById('bulk-custom-field').value = '';
+            document.getElementById('bulk-custom-field-group').style.display = 'none';
+            document.querySelector('input[name="bulk-operator"][value="OR"]').checked = true;
+            document.getElementById('bulk-preview').style.display = 'none';
+        }
+
+        // Build and update query
+        function updateQuery() {
+            const parts = [];
+
+            // SELECT
+            if (queryState.select.length > 0) {
+                parts.push(`SELECT ${queryState.select.join(', ')}`);
+            } else {
+                parts.push('SELECT *');
+            }
+
+            // FROM
+            parts.push(`FROM ${queryState.from}`);
+
+            // WHERE
+            if (queryState.where.length > 0) {
+                let whereClause = 'WHERE ';
+                queryState.where.forEach((w, i) => {
+                    if (w.operator) {
+                        whereClause += `\n  ${w.operator} `;
+                    }
+                    whereClause += w.condition;
+                });
+                parts.push(whereClause);
+            }
+
+            // GROUP BY
+            if (queryState.groupBy.length > 0) {
+                parts.push(`GROUP BY ${queryState.groupBy.join(', ')}`);
+            }
+
+            // ORDER BY
+            if (queryState.orderBy.length > 0) {
+                parts.push(`ORDER BY ${queryState.orderBy.join(', ')} ${queryState.orderDir}`);
+            }
+
+            // LIMIT
+            if (queryState.limit) {
+                parts.push(`LIMIT ${queryState.limit}`);
+            }
+
+            // TIME
+            if (queryState.time) {
+                parts.push(queryState.time);
+            }
+
+            const query = parts.join('\n');
+            document.getElementById('query-output').value = query;
+
+            // Validate
+            validateBuilderQuery(query);
+        }
+
+        function validateBuilderQuery(query) {
+            fetch('/api/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            })
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById('validation-output');
+                let html = '';
+
+                if (data.errors.length === 0 && data.warnings.length === 0) {
+                    html = '<div class="validation-item success">Query looks valid!</div>';
+                } else {
+                    data.errors.forEach(e => {
+                        html += `<div class="validation-item error">${escapeHtml(e)}</div>`;
+                    });
+                    data.warnings.forEach(w => {
+                        html += `<div class="validation-item warning">${escapeHtml(w)}</div>`;
+                    });
+                }
+                container.innerHTML = html;
+            });
+        }
+
+        function clearBuilder() {
+            queryState = {
+                select: [],
+                from: 'events',
+                where: [],
+                groupBy: [],
+                having: [],
+                orderBy: [],
+                orderDir: 'DESC',
+                limit: null,
+                time: null
+            };
+            document.getElementById('where-next-operator').value = 'AND';
+            document.getElementById('select-input').value = '';
+            document.getElementById('where-input').value = '';
+            document.getElementById('groupby-input').value = '';
+            document.getElementById('orderby-input').value = '';
+            document.getElementById('limit-input').value = '';
+            document.getElementById('time-select').value = '';
+            document.getElementById('custom-time').value = '';
+            document.getElementById('custom-time-group').style.display = 'none';
+            document.querySelector('input[name="table"][value="events"]').checked = true;
+            updateSelectTags();
+            updateWhereTags();
+            updateGroupByTags();
+            updateFieldButtons();
+            clearBulkSearch();
+            updateQuery();
+        }
+
+        function copyQuery() {
+            const query = document.getElementById('query-output').value;
+            navigator.clipboard.writeText(query).then(() => {
+                alert('Query copied to clipboard!');
+            });
+        }
+
+        // Templates
+        let allTemplates = {};
+
+        function loadTemplates() {
+            fetch('/api/templates')
+                .then(r => r.json())
+                .then(data => {
+                    allTemplates = data;
+                    const container = document.getElementById('templates-container');
+                    let html = '';
+
+                    for (const [category, templates] of Object.entries(data)) {
+                        html += `<div class="template-category">
+                            <h3>${escapeHtml(category)}</h3>
+                            <div class="template-grid">`;
+
+                        templates.forEach((t, i) => {
+                            html += `<div class="template-card" data-category="${escapeHtml(category)}" data-index="${i}">
+                                <h4>${escapeHtml(t.name)}</h4>
+                                <p>${escapeHtml(t.description)}</p>
+                            </div>`;
+                        });
+
+                        html += '</div></div>';
+                    }
+
+                    container.innerHTML = html;
+
+                    // Add click handlers after rendering
+                    container.querySelectorAll('.template-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const category = card.dataset.category;
+                            const index = parseInt(card.dataset.index);
+                            showTemplate(allTemplates[category][index]);
+                        });
+                    });
+                });
+        }
+
+        function showTemplate(template) {
+            currentTemplate = template;
+            document.getElementById('modal-title').textContent = template.name;
+            document.getElementById('modal-description').textContent = template.description;
+            document.getElementById('modal-query').textContent = template.query;
+            document.getElementById('template-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('template-modal').classList.remove('active');
+        }
+
+        function copyModalQuery() {
+            const query = document.getElementById('modal-query').textContent;
+            navigator.clipboard.writeText(query).then(() => {
+                alert('Query copied to clipboard!');
+            });
+        }
+
+        function loadToBuilder() {
+            if (!currentTemplate) return;
+
+            // Parse the template query and populate the builder
+            // This is a simplified version - just switches to builder tab
+            document.querySelector('.tab[data-panel="builder"]').click();
+
+            // Clear current state
+            clearBuilder();
+
+            // Set the query in the output for now
+            document.getElementById('query-output').textContent = currentTemplate.query;
+
+            closeModal();
+            alert('Template loaded! You can modify it in the output area.');
+        }
+
+        // Reference Data
+        function loadReferenceData() {
+            Promise.all([
+                fetch('/api/reference/event-fields').then(r => r.json()),
+                fetch('/api/reference/flow-fields').then(r => r.json()),
+                fetch('/api/reference/functions').then(r => r.json()),
+                fetch('/api/reference/operators').then(r => r.json())
+            ]).then(([eventFields, flowFields, functions, operators]) => {
+                referenceData = { eventFields, flowFields, functions, operators };
+                showReference('event-fields');
+                // Also populate the Functions tab
+                populateFunctionsTab(functions);
+            });
+        }
+
+        // Functions Tab
+        let selectedFunction = null;
+
+        function populateFunctionsTab(functions) {
+            const categoryMapping = {
+                'Aggregation': 'agg-functions',
+                'Calculation & Formatting': 'calc-functions',
+                'Data Retrieval': 'retrieval-functions',
+                'Geographic': 'geo-functions',
+                'Reference Data': 'ref-data-functions',
+                'Filter': 'filter-functions'
+            };
+
+            for (const [category, containerId] of Object.entries(categoryMapping)) {
+                const container = document.getElementById(containerId);
+                if (container && functions[category]) {
+                    container.innerHTML = functions[category].map(f => {
+                        // Extract a short hint from syntax (just the parameters)
+                        const hint = f.syntax.replace(f.name, '').replace(/[()]/g, '') || 'no params';
+                        return `<div class="function-card" data-name="${escapeHtml(f.name)}" data-syntax="${escapeHtml(f.syntax)}" data-description="${escapeHtml(f.description)}" data-category="${escapeHtml(category)}">
+                            <div class="func-name">${escapeHtml(f.name)}</div>
+                            <div class="func-hint">${escapeHtml(hint) || '-'}</div>
+                        </div>`;
+                    }).join('');
+
+                    // Add click handlers
+                    container.querySelectorAll('.function-card').forEach(card => {
+                        card.addEventListener('click', () => selectFunction(card));
+                    });
+                }
+            }
+        }
+
+        function selectFunction(card) {
+            // Remove selection from previous card
+            document.querySelectorAll('.function-card.selected').forEach(c => c.classList.remove('selected'));
+
+            // Select this card
+            card.classList.add('selected');
+
+            const name = card.dataset.name;
+            const syntax = card.dataset.syntax;
+            const description = card.dataset.description;
+            const category = card.dataset.category;
+
+            selectedFunction = { name, syntax, description, category };
+
+            // Update preview
+            const preview = document.getElementById('function-preview');
+            preview.innerHTML = `
+                <div class="preview-name">${escapeHtml(name)}</div>
+                <div class="preview-syntax">${escapeHtml(syntax)}</div>
+                <div class="preview-desc">${escapeHtml(description)}</div>
+            `;
+
+            // Show add controls and populate input
+            document.getElementById('function-add-controls').style.display = 'block';
+            document.getElementById('function-custom-input').value = syntax;
+        }
+
+        function addFunctionToSelect() {
+            const customInput = document.getElementById('function-custom-input').value.trim();
+            if (customInput) {
+                addSelect(customInput);
+                // Switch to builder tab to show the result
+                document.querySelector('.tab[data-panel="builder"]').click();
+            }
+        }
+
+        function addFunctionToWhere() {
+            const customInput = document.getElementById('function-custom-input').value.trim();
+            if (customInput) {
+                // For WHERE, we need to make it a condition
+                // Open a prompt to complete the condition
+                const condition = prompt(`Complete the WHERE condition:\n${customInput}`, `${customInput} = ''`);
+                if (condition) {
+                    addWhere(condition);
+                    // Switch to builder tab to show the result
+                    document.querySelector('.tab[data-panel="builder"]').click();
+                }
+            }
+        }
+
+        function showReference(type) {
+            const container = document.getElementById('ref-content');
+            let html = '';
+
+            switch(type) {
+                case 'event-fields':
+                    html = '<table class="ref-table"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody>';
+                    referenceData.eventFields.forEach(f => {
+                        html += `<tr><td><code>${escapeHtml(f.name)}</code></td><td>${escapeHtml(f.type)}</td><td>${escapeHtml(f.description)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'flow-fields':
+                    html = '<table class="ref-table"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead><tbody>';
+                    referenceData.flowFields.forEach(f => {
+                        html += `<tr><td><code>${escapeHtml(f.name)}</code></td><td>${escapeHtml(f.type)}</td><td>${escapeHtml(f.description)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'functions':
+                    for (const [cat, funcs] of Object.entries(referenceData.functions)) {
+                        html += `<div class="accordion-item">
+                            <div class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                                ${escapeHtml(cat)} <span class="arrow">▼</span>
+                            </div>
+                            <div class="accordion-content">
+                                <table class="ref-table"><thead><tr><th>Function</th><th>Syntax</th><th>Description</th></tr></thead><tbody>`;
+                        funcs.forEach(f => {
+                            html += `<tr><td><strong>${escapeHtml(f.name)}</strong></td><td><code>${escapeHtml(f.syntax)}</code></td><td>${escapeHtml(f.description)}</td></tr>`;
+                        });
+                        html += '</tbody></table></div></div>';
+                    }
+                    break;
+
+                case 'operators':
+                    html = '<h4 class="mb-1">Comparison Operators</h4>';
+                    html += '<table class="ref-table mb-2"><tbody>';
+                    referenceData.operators.comparison.forEach(o => {
+                        html += `<tr><td><code>${escapeHtml(o.op)}</code></td><td>${escapeHtml(o.desc)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+
+                    html += '<h4 class="mb-1">String Operators</h4>';
+                    html += '<table class="ref-table mb-2"><tbody>';
+                    referenceData.operators.string.forEach(o => {
+                        html += `<tr><td><code>${escapeHtml(o.op)}</code></td><td>${escapeHtml(o.desc)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+
+                    html += '<h4 class="mb-1">Logical Operators</h4>';
+                    html += '<table class="ref-table"><tbody>';
+                    referenceData.operators.logical.forEach(o => {
+                        html += `<tr><td><code>${escapeHtml(o.op)}</code></td><td>${escapeHtml(o.desc)}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                    break;
+
+                case 'time':
+                    html = `
+                        <h4 class="mb-1">LAST Clause (Relative Time)</h4>
+                        <p class="text-muted mb-1">Syntax: LAST &lt;number&gt; &lt;MINUTES|HOURS|DAYS&gt;</p>
+                        <table class="ref-table mb-2">
+                            <tbody>
+                                <tr><td><code>LAST 5 MINUTES</code></td><td>Last 5 minutes</td></tr>
+                                <tr><td><code>LAST 1 HOURS</code></td><td>Last 1 hour</td></tr>
+                                <tr><td><code>LAST 24 HOURS</code></td><td>Last 24 hours</td></tr>
+                                <tr><td><code>LAST 7 DAYS</code></td><td>Last 7 days</td></tr>
+                            </tbody>
+                        </table>
+
+                        <h4 class="mb-1">START/STOP Clause (Absolute Time)</h4>
+                        <p class="text-muted mb-1">Format: yyyy-MM-dd HH:mm or yyyy-MM-dd HH:mm:ss</p>
+                        <table class="ref-table mb-2">
+                            <tbody>
+                                <tr><td><code>START '2024-01-01 00:00' STOP '2024-01-02 00:00'</code></td><td>Specific date range</td></tr>
+                                <tr><td><code>START '2024-01-01 09:00:00'</code></td><td>From specific time to now</td></tr>
+                            </tbody>
+                        </table>
+
+                        <h4 class="mb-1">PARSEDATETIME (Dynamic Time)</h4>
+                        <table class="ref-table">
+                            <tbody>
+                                <tr><td><code>START PARSEDATETIME('1 hour ago')</code></td><td>Dynamic time reference</td></tr>
+                                <tr><td><code>START PARSEDATETIME('1 day ago') STOP PARSEDATETIME('now')</code></td><td>Dynamic range</td></tr>
+                            </tbody>
+                        </table>
+
+                        <div class="validation-item warning mt-2">
+                            Note: Time clauses must come AFTER the LIMIT clause if both are used.
+                        </div>
+                    `;
+                    break;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Validator
+        function validateQuery() {
+            const query = document.getElementById('validate-input').value;
+            const container = document.getElementById('validate-output');
+
+            if (!query.trim()) {
+                container.innerHTML = '<div class="validation-item warning">Please enter a query to validate</div>';
+                return;
+            }
+
+            fetch('/api/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query })
+            })
+            .then(r => r.json())
+            .then(data => {
+                let html = '';
+
+                if (data.valid && data.warnings.length === 0) {
+                    html = '<div class="validation-item success">Query is valid!</div>';
+                } else {
+                    if (data.errors.length > 0) {
+                        html += '<h4 class="mb-1" style="color:var(--danger)">Errors</h4>';
+                        data.errors.forEach(e => {
+                            html += `<div class="validation-item error">${escapeHtml(e)}</div>`;
+                        });
+                    }
+                    if (data.warnings.length > 0) {
+                        html += '<h4 class="mb-1 mt-2" style="color:var(--warning)">Warnings</h4>';
+                        data.warnings.forEach(w => {
+                            html += `<div class="validation-item warning">${escapeHtml(w)}</div>`;
+                        });
+                    }
+                    if (data.valid) {
+                        html += '<div class="validation-item success mt-2">Query structure is valid (warnings are suggestions)</div>';
+                    }
+                }
+
+                container.innerHTML = html;
+            });
+        }
+
+        // Utility
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
